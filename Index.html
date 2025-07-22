@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Visited Countries Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { margin: 0; display: flex; flex-direction: row; }
+    #map { height: 100vh; width: 80vw; }
+    #visited {
+      width: 20vw; padding: 10px;
+      background: #fff; overflow-y: auto;
+      font-family: sans-serif;
+    }
+    ul { padding-left: 20px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="visited">
+    <h3>Visited Countries</h3>
+    <ul id="countryList"></ul>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script>
+    const visited = new Set();
+    const map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    function updateList() {
+      const ul = document.getElementById("countryList");
+      ul.innerHTML = "";
+      Array.from(visited).sort().forEach(c => {
+        const li = document.createElement("li");
+        li.textContent = c;
+        ul.appendChild(li);
+      });
+    }
+
+    axios.get('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+      .then(res => {
+        L.geoJSON(res.data, {
+          style: { color: "#555", weight: 1 },
+          onEachFeature: function (feature, layer) {
+            layer.on('click', function () {
+              const country = feature.properties.name;
+              if (visited.has(country)) {
+                visited.delete(country);
+                layer.setStyle({ fillColor: null });
+              } else {
+                visited.add(country);
+                layer.setStyle({ fillColor: "green", fillOpacity: 0.6 });
+              }
+              updateList();
+            });
+          }
+        }).addTo(map);
+      });
+  </script>
+</body>
+</html>
